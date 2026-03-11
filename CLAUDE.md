@@ -12,10 +12,17 @@ CLI tool that scans all .md files in a project and serves them as a documentatio
 - Live reload: WebSocket (ws)
 
 ## Core Features
-1. `tidoc serve [path]` — scan all .md files, serve on localhost:4000
-2. Auto sidebar from folder structure
-3. Live reload on file change
-4. Client-side search with Fuse.js
+1. `tidoc serve [path|url]` — scan all .md files, serve on localhost:4000
+2. `tidoc serve https://github.com/user/repo` — clone and serve from git repo
+3. Auto sidebar from folder structure
+4. Live reload on file change
+5. Cmd/Ctrl+K search modal
+
+## Git URL Support
+- Detect URLs: https://, git://, or GitHub shorthand (user/repo)
+- Shallow clone to OS temp dir, cleanup on exit
+- Flags: --branch <name>, --subdir <path>
+- Module: src/git.js — cloneRepo(url, options) → tmpDir path
 
 ## Project Structure
 src/

@@ -20,6 +20,7 @@ tidoc serve ./docs
 ## Features
 
 - **Zero config** -- just run `tidoc serve` in any project
+- **Serve from GitHub** -- `tidoc serve user/repo` clones and serves any public repo
 - **Auto sidebar** -- folder structure becomes navigation, README.md shown first
 - **Live reload** -- edit a `.md` file, browser updates instantly via WebSocket
 - **Search** -- Cmd/Ctrl+K opens a search modal with full-text search
@@ -32,13 +33,16 @@ tidoc serve ./docs
 ## Usage
 
 ```bash
-tidoc serve [path] [options]
+tidoc serve [path|url] [options]
 ```
 
 | Option | Description | Default |
 |---|---|---|
 | `[path]` | Directory to serve | `.` (current dir) |
+| `[url]` | Git URL or GitHub shorthand (`user/repo`) | -- |
 | `--port <number>` | Port to listen on | `4000` |
+| `--branch <name>` | Git branch to clone | default branch |
+| `--subdir <path>` | Subdirectory within repo to serve | repo root |
 | `--ignore <pattern>` | Glob pattern to exclude (repeatable) | -- |
 | `--help, -h` | Show help | -- |
 
@@ -50,6 +54,13 @@ tidoc serve
 
 # Serve a specific folder on port 3000
 tidoc serve ./docs --port 3000
+
+# Serve from a GitHub repo
+tidoc serve honojs/hono
+tidoc serve https://github.com/honojs/hono
+
+# Serve a specific branch and subdirectory
+tidoc serve user/repo --branch main --subdir docs
 
 # Ignore draft files
 tidoc serve --ignore "drafts/**" --ignore "private/**"

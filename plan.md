@@ -89,6 +89,21 @@ tidoc/
 
 ---
 
+### Phase 5 — Serve from Git URL
+**Goal:** `tidoc serve <git-url>` clone repo vào temp dir rồi serve
+
+- [ ] Detect khi path là URL (https:// hoặc git://)
+- [ ] `src/git.js` — shallow clone repo vào OS temp dir (`os.tmpdir()`)
+- [ ] Support GitHub shorthand: `user/repo` → `https://github.com/user/repo.git`
+- [ ] Support `--branch <name>` flag để chọn branch
+- [ ] Support `--subdir <path>` flag để serve subfolder trong repo
+- [ ] Cleanup temp dir on process exit (SIGINT, SIGTERM)
+- [ ] `cli.js` — detect URL, clone, then serve from cloned dir
+
+**Deliverable:** `tidoc serve https://github.com/user/repo` → serve docs từ repo ✅
+
+---
+
 ## 4. CLAUDE.md (copy vào project)
 
 ```markdown
