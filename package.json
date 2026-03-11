@@ -1,6 +1,6 @@
 {
   "name": "@zerohat/tidoc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "CLI tool that scans .md files and serves them as a documentation website",
   "type": "module",
   "license": "MIT",
