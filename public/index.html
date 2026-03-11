@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tidoc</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <link rel="stylesheet" id="hljs-light" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css">
+  <link rel="stylesheet" id="hljs-dark" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css" disabled>
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+</head>
+<body>
+  <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+    <span class="hamburger"></span>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">Tidoc</h2>
+      <button class="dark-mode-toggle" id="dark-mode-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">&#9790;</button>
+    </div>
+    <div class="sidebar-search">
+      <button class="search-trigger" id="search-trigger" aria-label="Search documentation">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M14.386 14.386l4.088 4.088" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2"/></svg>
+        <span class="search-trigger-text">Search</span>
+        <kbd class="search-trigger-kbd"><span class="search-trigger-kbd-meta"></span>K</kbd>
+      </button>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <!-- File tree rendered by app.js -->
+    </nav>
+  </aside>
+
+  <main class="content" id="content">
+    <nav class="breadcrumb" id="breadcrumb"></nav>
+    <article class="content-body" id="content-body">
+      <p>Loading...</p>
+    </article>
+  </main>
+
+  <!-- Search Modal -->
+  <div class="search-modal-overlay" id="search-modal-overlay">
+    <div class="search-modal" id="search-modal" role="dialog" aria-label="Search documentation">
+      <div class="search-modal-header">
+        <svg class="search-modal-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M14.386 14.386l4.088 4.088" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="9" cy="9" r="7" stroke="currentColor" stroke-width="2"/></svg>
+        <input type="text" class="search-modal-input" id="search-modal-input" placeholder="Search docs..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button class="search-modal-cancel" id="search-modal-cancel">Esc</button>
+      </div>
+      <div class="search-modal-body" id="search-modal-body">
+        <div class="search-modal-placeholder">
+          <p>Type to search documentation</p>
+        </div>
+      </div>
+      <div class="search-modal-footer">
+        <span class="search-footer-hint"><kbd>&uarr;</kbd><kbd>&darr;</kbd> to navigate</span>
+        <span class="search-footer-hint"><kbd>&crarr;</kbd> to open</span>
+        <span class="search-footer-hint"><kbd>Esc</kbd> to close</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

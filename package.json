@@ -1,0 +1,22 @@
+{
+  "name": "tidoc",
+  "version": "0.1.0",
+  "description": "CLI tool that scans .md files and serves them as a documentation website",
+  "type": "module",
+  "bin": {
+    "tidoc": "./bin/tidoc.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js serve ."
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "chokidar": "^4.0.3",
+    "fuse.js": "^7.0.0",
+    "glob": "^11.0.1",
+    "highlight.js": "^11.11.1",
+    "hono": "^4.7.4",
+    "marked": "^15.0.7",
+    "ws": "^8.18.1"
+  }
+}
