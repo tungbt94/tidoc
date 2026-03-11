@@ -59,49 +59,27 @@ export async function createServer(rootPath, options = {}) {
     }
   });
 
-  // --- Phase 3: Search API ---
+  // --- Search index API (client-side MiniSearch) ---
 
-  app.get('/api/search', async (c) => {
-    const query = c.req.query('q');
-
-    if (!query || !query.trim()) {
-      return c.json([]);
-    }
-
-    const q = query.trim();
-    const qLower = q.toLowerCase();
+  app.get('/api/search-index', async (c) => {
     const files = await scanFiles(absoluteRoot, { ignore: ignorePatterns });
-    const results = [];
+    const docs = [];
 
     for (const file of files) {
-      if (results.length >= 20) break;
-
       try {
         const content = await fs.readFile(file.path, 'utf-8');
-        const idx = content.toLowerCase().indexOf(qLower);
-
-        if (idx === -1) continue;
-
-        // Build a ~100 char excerpt around the first match
-        const excerptRadius = 50;
-        const start = Math.max(0, idx - excerptRadius);
-        const end = Math.min(content.length, idx + q.length + excerptRadius);
-        let excerpt = content.slice(start, end).replace(/\n/g, ' ');
-
-        if (start > 0) excerpt = '...' + excerpt;
-        if (end < content.length) excerpt = excerpt + '...';
-
-        results.push({
+        docs.push({
+          id: file.relativePath,
           path: file.relativePath,
           name: file.name,
-          excerpt,
+          content,
         });
       } catch {
         // Skip files that can't be read
       }
     }
 
-    return c.json(results);
+    return c.json(docs);
   });
 
   // --- Static file serving ---
@@ -114,6 +92,13 @@ export async function createServer(rootPath, options = {}) {
     '.svg': 'image/svg+xml',
     '.png': 'image/png',
   };
+
+  // Serve minisearch UMD from node_modules
+  const minisearchPath = path.join(__dirname, '..', 'node_modules', 'minisearch', 'dist', 'umd', 'index.js');
+  app.get('/vendor/minisearch.js', async (c) => {
+    const content = await fs.readFile(minisearchPath);
+    return c.body(content, 200, { 'Content-Type': 'text/javascript' });
+  });
 
   app.get('/', async (c) => {
     const html = await fs.readFile(path.join(publicDir, 'index.html'), 'utf-8');

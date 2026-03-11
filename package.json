@@ -33,11 +33,10 @@
   "dependencies": {
     "@hono/node-server": "^1.14.1",
     "chokidar": "^4.0.3",
-    "fuse.js": "^7.0.0",
     "glob": "^13.0.6",
-    "highlight.js": "^11.11.1",
     "hono": "^4.7.4",
     "marked": "^15.0.7",
+    "minisearch": "^7.2.0",
     "ws": "^8.18.1"
   }
 }

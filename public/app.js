@@ -19,6 +19,9 @@ const searchModalCancel = document.getElementById("search-modal-cancel");
 let fileTree = [];
 let currentPath = null;
 let searchDebounceTimer = null;
+let miniSearch = null;
+let searchDocs = {}; // id → {path, name, content}
+let pendingScrollAnchor = null;
 
 // ===== Dark Mode =====
 
@@ -56,6 +59,15 @@ darkModeToggle.addEventListener("click", () => {
   const next = current === "dark" ? "light" : "dark";
   localStorage.setItem("tidoc-theme", next);
   applyTheme(next);
+  if (window.__mermaid) {
+    window.__mermaid.initialize({ theme: next === "dark" ? "dark" : "default" });
+    // Re-render mermaid diagrams with new theme
+    const mermaidEls = document.querySelectorAll(".content-body pre.mermaid");
+    if (mermaidEls.length) {
+      mermaidEls.forEach(el => { el.removeAttribute("data-processed"); el.innerHTML = el.getAttribute("data-original") || el.textContent; });
+      window.__mermaid.run({ querySelector: ".content-body pre.mermaid" });
+    }
+  }
 });
 
 // Apply theme immediately
@@ -225,9 +237,29 @@ async function loadFile(filePath) {
     // Update breadcrumb
     updateBreadcrumb(filePath);
 
-    // Scroll content to top
-    contentBody.scrollTop = 0;
-    window.scrollTo(0, 0);
+    // Scroll to anchor if coming from search, otherwise scroll to top
+    if (pendingScrollAnchor) {
+      const anchorEl = document.getElementById(pendingScrollAnchor);
+      if (anchorEl) {
+        anchorEl.scrollIntoView({ behavior: "smooth" });
+      } else {
+        contentBody.scrollTop = 0;
+        window.scrollTo(0, 0);
+      }
+      pendingScrollAnchor = null;
+    } else {
+      contentBody.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }
+
+    // Render mermaid diagrams
+    if (window.__mermaid) {
+      const mermaidEls = contentBody.querySelectorAll("pre.mermaid");
+      mermaidEls.forEach(el => el.setAttribute("data-original", el.textContent));
+      if (mermaidEls.length) {
+        await window.__mermaid.run({ querySelector: '.content-body pre.mermaid' });
+      }
+    }
 
     // Update page title
     const fileName = filePath.split("/").pop().replace(/\.md$/i, "");
@@ -300,6 +332,67 @@ function highlightQuery(text, query) {
   return text.replace(new RegExp(`(${escaped})`, "gi"), "<mark>$1</mark>");
 }
 
+/**
+ * Build excerpt around the first match of query terms in content.
+ */
+function buildExcerpt(content, query) {
+  const qLower = query.toLowerCase();
+  const idx = content.toLowerCase().indexOf(qLower);
+  if (idx === -1) return content.slice(0, 100).replace(/\n/g, " ") + "...";
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(content.length, idx + qLower.length + 60);
+  let excerpt = content.slice(start, end).replace(/\n/g, " ");
+  if (start > 0) excerpt = "..." + excerpt;
+  if (end < content.length) excerpt += "...";
+  return excerpt;
+}
+
+/**
+ * Slugify text the same way the server-side renderer does.
+ * @param {string} text
+ * @returns {string}
+ */
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/**
+ * Find the heading slug for the section that contains the first match of query.
+ * @param {string} content - Raw markdown content
+ * @param {string} query - Search query
+ * @returns {string|null} - Slugified heading or null
+ */
+function findMatchHeading(content, query) {
+  const lines = content.split("\n");
+  let lastHeading = null;
+  const qLower = query.toLowerCase();
+  let textSoFar = "";
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
+    if (headingMatch) {
+      // Check if query was found in the previous section
+      if (lastHeading && textSoFar.toLowerCase().includes(qLower)) {
+        return slugify(lastHeading);
+      }
+      lastHeading = headingMatch[2].trim();
+      textSoFar = "";
+    } else {
+      textSoFar += line + "\n";
+    }
+  }
+  // Check the last section
+  if (lastHeading && textSoFar.toLowerCase().includes(qLower)) {
+    return slugify(lastHeading);
+  }
+  return null; // match is before first heading or not found
+}
+
 function renderSearchResults(results, query) {
   searchModalBody.innerHTML = "";
   searchActiveIndex = -1;
@@ -321,13 +414,22 @@ function renderSearchResults(results, query) {
 
     const icon = `<svg class="search-item-icon" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 4h8l4 4v8a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.5"/><path d="M12 4v4h4" stroke="currentColor" stroke-width="1.5"/></svg>`;
 
-    const excerptHtml = result.excerpt
-      ? `<span class="search-item-excerpt">${highlightQuery(escapeHtml(result.excerpt), query)}</span>`
+    const doc = searchDocs[result.id];
+    const excerpt = doc ? buildExcerpt(doc.content, query) : "";
+    const excerptHtml = excerpt
+      ? `<span class="search-item-excerpt">${highlightQuery(escapeHtml(excerpt), query)}</span>`
       : "";
+
+    // Find the heading anchor for the section containing the match
+    const anchor = doc ? findMatchHeading(doc.content, query) : null;
+    if (anchor) {
+      li.dataset.anchor = anchor;
+    }
 
     li.innerHTML = `${icon}<div class="search-item-content"><span class="search-item-path">${escapeHtml(result.path)}</span>${excerptHtml}</div><svg class="search-item-action" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M5 10h10m-4-4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
     li.addEventListener("click", () => {
+      pendingScrollAnchor = anchor;
       navigateTo(result.path);
       closeSearchModal();
     });
@@ -352,9 +454,8 @@ function setActiveSearchItem(index) {
   }
 }
 
-// Debounced search
+// Client-side search with MiniSearch (instant, no network)
 searchModalInput.addEventListener("input", () => {
-  clearTimeout(searchDebounceTimer);
   const query = searchModalInput.value.trim();
   if (!query) {
     searchModalBody.innerHTML = `<div class="search-modal-placeholder"><p>Type to search documentation</p></div>`;
@@ -362,14 +463,12 @@ searchModalInput.addEventListener("input", () => {
     searchActiveIndex = -1;
     return;
   }
-  searchDebounceTimer = setTimeout(() => {
-    fetch(`/api/search?q=${encodeURIComponent(query)}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((results) => renderSearchResults(results, query))
-      .catch(() => {
-        searchModalBody.innerHTML = `<div class="search-modal-placeholder"><p>Search failed</p></div>`;
-      });
-  }, 200);
+  if (!miniSearch) {
+    searchModalBody.innerHTML = `<div class="search-modal-placeholder"><p>Search index loading...</p></div>`;
+    return;
+  }
+  const results = miniSearch.search(query, { prefix: true, fuzzy: 0.2, boost: { name: 2 } });
+  renderSearchResults(results.slice(0, 20), query);
 });
 
 // Keyboard navigation in modal
@@ -382,8 +481,10 @@ searchModalInput.addEventListener("keydown", (e) => {
     setActiveSearchItem(Math.max(searchActiveIndex - 1, 0));
   } else if (e.key === "Enter" && searchActiveIndex >= 0) {
     e.preventDefault();
-    const path = searchResultItems[searchActiveIndex]?.dataset.path;
+    const activeItem = searchResultItems[searchActiveIndex];
+    const path = activeItem?.dataset.path;
     if (path) {
+      pendingScrollAnchor = activeItem.dataset.anchor || null;
       navigateTo(path);
       closeSearchModal();
     }
@@ -441,8 +542,9 @@ function connectWebSocket() {
           if (pathToReload) {
             loadFile(pathToReload);
           }
-          // Refresh the sidebar tree
+          // Refresh the sidebar tree and search index
           refreshSidebar();
+          buildSearchIndex();
         }
       } catch (err) {
         console.error("[tidoc] WebSocket message error:", err);
@@ -497,6 +599,32 @@ sidebarNav.addEventListener("click", (e) => {
   }
 });
 
+// ===== Search Index (MiniSearch) =====
+
+async function buildSearchIndex() {
+  try {
+    const res = await fetch("/api/search-index");
+    if (!res.ok) return;
+    const docs = await res.json();
+
+    miniSearch = new MiniSearch({
+      fields: ["name", "content"],
+      storeFields: ["path", "name"],
+      searchOptions: { prefix: true, fuzzy: 0.2 },
+    });
+
+    searchDocs = {};
+    for (const doc of docs) {
+      searchDocs[doc.id] = doc;
+    }
+
+    miniSearch.addAll(docs);
+    console.log(`[tidoc] Search index built: ${docs.length} docs`);
+  } catch (err) {
+    console.error("[tidoc] Failed to build search index:", err);
+  }
+}
+
 // ===== Initialization =====
 
 async function init() {
@@ -538,6 +666,9 @@ async function init() {
 
     // Connect WebSocket for live reload
     connectWebSocket();
+
+    // Build search index in background
+    buildSearchIndex();
   } catch (err) {
     sidebarNav.innerHTML = "<p>Error connecting to server.</p>";
     contentBody.innerHTML = "<p>Failed to initialize.</p>";

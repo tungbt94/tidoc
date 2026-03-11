@@ -91,7 +91,7 @@ export async function run(argv = process.argv.slice(2)) {
 
   // If path looks like a git URL, clone it first
   if (isGitUrl(rootPath)) {
-    const tmpDir = await cloneRepo(rootPath, { branch });
+    const tmpDir = await cloneRepo(rootPath, { branch, subdir });
     registerCleanup(tmpDir);
     rootPath = subdir ? path.join(tmpDir, subdir) : tmpDir;
   } else {
