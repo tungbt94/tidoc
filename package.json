@@ -1,10 +1,31 @@
 {
-  "name": "tidoc",
+  "name": "@zerohat/tidoc",
   "version": "0.1.0",
   "description": "CLI tool that scans .md files and serves them as a documentation website",
   "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "documentation",
+    "markdown",
+    "docs",
+    "cli",
+    "static-site",
+    "live-reload"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tung/tidoc"
+  },
   "bin": {
     "tidoc": "./bin/tidoc.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "public"
+  ],
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
     "start": "node src/cli.js serve ."
