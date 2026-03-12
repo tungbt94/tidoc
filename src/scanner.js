@@ -12,11 +12,46 @@ export async function scanFiles(rootPath, options = {}) {
   const absoluteRoot = path.resolve(rootPath);
 
   const defaultIgnore = [
-    "node_modules/**",
+    // Version control
     ".git/**",
-    ".tidoc/**",
+    ".svn/**",
+    ".hg/**",
+    // Node.js
+    "node_modules/**",
+    // Python
+    "venv/**",
+    ".venv/**",
+    "__pycache__/**",
+    ".pytest_cache/**",
+    ".mypy_cache/**",
+    ".tox/**",
+    // Ruby
+    "vendor/bundle/**",
+    // PHP / Go
+    "vendor/**",
+    // Rust / Java / Scala
+    "target/**",
+    // Java / Kotlin
+    ".gradle/**",
+    // .NET
+    "bin/**",
+    "obj/**",
+    "packages/**",
+    // Elixir
+    "_build/**",
+    "deps/**",
+    // Build outputs
     "dist/**",
     "build/**",
+    "out/**",
+    // Misc
+    ".tidoc/**",
+    ".cache/**",
+    "coverage/**",
+    ".next/**",
+    ".nuxt/**",
+    ".output/**",
+    ".turbo/**",
   ];
   const ignore = options.ignore
     ? [...defaultIgnore, ...options.ignore]

@@ -93,8 +93,9 @@ export async function createServer(rootPath, options = {}) {
     '.png': 'image/png',
   };
 
-  // Serve minisearch UMD from node_modules
-  const minisearchPath = path.join(__dirname, '..', 'node_modules', 'minisearch', 'dist', 'umd', 'index.js');
+  // Serve minisearch UMD from node_modules (resolve main entry, then find UMD sibling)
+  const minisearchMain = fileURLToPath(import.meta.resolve('minisearch'));
+  const minisearchPath = path.join(path.dirname(minisearchMain), '..', 'umd', 'index.js');
   app.get('/vendor/minisearch.js', async (c) => {
     const content = await fs.readFile(minisearchPath);
     return c.body(content, 200, { 'Content-Type': 'text/javascript' });
